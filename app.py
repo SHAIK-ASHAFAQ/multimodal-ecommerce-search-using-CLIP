@@ -12,11 +12,37 @@ st.markdown("Type a natural language concept below to query our multi-modal vect
 @st.cache_resource
 def load_backend():
     chroma_client = chromadb.PersistentClient(path="./chroma_db")
-    collection = chroma_client.get_collection(name="amazon_products")
+    
+    # FIX: Changed from .get_collection() to .get_or_create_collection()
+    collection = chroma_client.get_or_create_collection(name="amazon_products")
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device)
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    
+    # FIX: If the database on the cloud server is brand new, automatically index the CSV data!
+    if collection.count() == 0:
+        import pandas as pd
+        try:
+            df = pd.read_csv("amazon_laptop.csv") # Assumes this file name is in your repo root
+            for index, row in df.head(500).iterrows(): # Caps at 500 for fast cloud compilation speed
+                title = str(row.get('name', row.get('title', ''))).strip()
+                prod_id = str(row.get('product_id', row.get('id', index))).strip()
+                category = str(row.get('category', 'Electronics')).strip()
+                
+                if len(title) < 5: continue
+                truncated_title = title[:77]
+                
+                inputs = processor(text=[truncated_title], return_tensors="pt", padding=True).to(device)
+                with torch.no_grad():
+                    outputs = model.text_model(**inputs)
+                    text_features = model.text_projection(outputs.pooler_output)
+                    embedding = text_features.cpu().numpy().tolist()
+                
+                collection.upsert(ids=[prod_id], embeddings=[embedding], metadatas=[{"title": title[:200], "category": category}])
+        except Exception as e:
+            st.error(f"Cloud auto-indexing failed: {e}")
+            
     return collection, model, processor, device
 
 collection, model, processor, device = load_backend()
