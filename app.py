@@ -24,7 +24,7 @@ def load_backend():
     if collection.count() == 0:
         import pandas as pd
         try:
-            df = pd.read_csv("amazon_laptop.csv") # Assumes this file name is in your repo root
+            df = pd.read_csv("amazon.csv") # Assumes this file name is in your repo root
             for index, row in df.head(500).iterrows(): # Caps at 500 for fast cloud compilation speed
                 title = str(row.get('name', row.get('title', ''))).strip()
                 prod_id = str(row.get('product_id', row.get('id', index))).strip()
