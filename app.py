@@ -54,16 +54,14 @@ num_results = st.slider("Number of recommendations to fetch", min_value=1, max_v
 # 4. Search Execution Engine
 if user_query:
     with st.spinner("Analyzing semantic vector space..."):
-        # Tokenize and encode query string
         inputs = processor(text=[user_query], return_tensors="pt", padding=True).to(device)
         with torch.no_grad():
             outputs = model.text_model(**inputs)
             query_embedding = model.text_projection(outputs.pooler_output).cpu().numpy().tolist()
         
-        # Query local database index
         results = collection.query(query_embeddings=query_embedding, n_results=num_results)
         
-        # FIX: Extract the inner list from ChromaDB's batch container format
+        # FIX: Explicitly extract and flatten the inner lists from ChromaDB's cloud container
         ids = results['ids'][0] if results['ids'] else []
         metadatas = results['metadatas'][0] if results['metadatas'] else []
         distances = results['distances'][0] if results['distances'] else []
@@ -72,13 +70,10 @@ if user_query:
             st.warning("❌ No products found in the vector space.")
         else:
             st.subheader("✨ Top Recommended Products")
-            
-            # Display results cleanly using Streamlit Containers
             for i in range(len(ids)):
                 with st.container(border=True):
-                    col1, col2 = st.columns([1, 4]) # 1:4 width ratio for metrics vs text
+                    col1, col2 = st.columns()
                     with col1:
-                        # Now safely formats a float number!
                         st.metric(label="Distance Score", value=f"{distances[i]:.2f}")
                     with col2:
                         st.markdown(f"### **{metadatas[i]['title']}**")
