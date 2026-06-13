@@ -27,7 +27,7 @@ def load_backend_and_embeddings():
         st.error("❌ No CSV dataset found in your GitHub repository root folder!")
         return None, None, None, None, None
         
-    df = pd.read_csv(target_csv).head(100) # Limits to top 100 rows for lightning speed
+    df = pd.read_csv(target_csv) # Limits to top 100 rows for lightning speed
     titles = df.get('product_name', df.get('name', df.get('title', pd.Series()))).astype(str).tolist()
     ids = df.get('product_id', df.get('id', pd.Series(range(len(df))))).astype(str).tolist()
     categories = df.get('category', pd.Series(["Electronics"] * len(df))).astype(str).tolist()
