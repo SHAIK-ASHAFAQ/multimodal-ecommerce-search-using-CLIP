@@ -77,7 +77,7 @@ if user_query and product_embeddings is not None:
         for score, idx_tensor in zip(top_scores, top_indices):
             idx = idx_tensor.item()
             with st.container(border=True):
-                col1, col2 = st.columns()
+                col1, col2 = st.columns(2)
                 with col1:
                     # Formats similarity rating beautifully as a clean positive value
                     st.metric(label="Semantic Match Score", value=f"{score.item():.4f}")
