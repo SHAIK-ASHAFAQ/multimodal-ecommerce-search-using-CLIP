@@ -5,8 +5,8 @@ import os
 from transformers import CLIPProcessor, CLIPModel
 
 # 1. Page Configuration & Visual Setup
-st.set_page_config(page_title="Amazon ML Semantic Search", page_icon="📦", layout="wide")
-st.title("📦 Amazon ML Summer School: Semantic Product Discovery")
+st.set_page_config(page_title=" ML Semantic Search", page_icon="📦", layout="wide")
+st.title("📦  Multimodal Semantic Product Discovery")
 st.markdown("Type a natural language concept below to query our multi-modal vector database.")
 
 # 2. Cached Backend Loader (Loads model and dataset securely into cloud RAM)
