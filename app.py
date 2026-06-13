@@ -61,12 +61,16 @@ if user_query:
         
         results = collection.query(query_embeddings=query_embedding, n_results=num_results)
         
-        # FIX: Explicitly extract and flatten the inner lists from ChromaDB's cloud container
-        ids = results['ids'][0] if results['ids'] else []
-        metadatas = results['metadatas'][0] if results['metadatas'] else []
-        distances = results['distances'][0] if results['distances'] else []
+        # FIX: Safely extract the inner list [0] from ChromaDB's double-nested format
+        raw_ids = results.get('ids', [[]])
+        raw_metadatas = results.get('metadatas', [[]])
+        raw_distances = results.get('distances', [[]])
+
+        ids = raw_ids[0] if raw_ids else []
+        metadatas = raw_metadatas[0] if raw_metadatas else []
+        distances = raw_distances[0] if raw_distances else []
         
-        if len(ids) == 0:
+        if not ids or len(ids) == 0:
             st.warning("❌ No products found in the vector space.")
         else:
             st.subheader("✨ Top Recommended Products")
