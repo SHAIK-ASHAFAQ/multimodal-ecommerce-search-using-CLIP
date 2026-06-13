@@ -59,26 +59,24 @@ num_results = st.slider("Number of recommendations to fetch", min_value=1, max_v
 # 4. Pure Vector Matrix Search Execution
 if user_query and product_embeddings is not None:
     with st.spinner("Calculating similarity across vector space..."):
-        # Vectorize and normalize the user input search phrase
         inputs = processor(text=[user_query], return_tensors="pt", padding=True).to(device)
         with torch.no_grad():
             query_outputs = model.text_model(**inputs)
             query_features = model.text_projection(query_outputs.pooler_output)
             query_features = query_features / query_features.norm(dim=-1, keepdim=True)
             
-        # Mathematical Tensor Dot Product (Calculates Cosine Similarity directly)
-        # Result scores scale cleanly between -1.0 (opposite) and 1.0 (perfect match)
         similarity_scores = torch.matmul(query_features, product_embeddings.T).squeeze(0)
         
-        # Sort scores in descending order to extract best semantic matches
-        top_scores, top_indices = torch.topk(similarity_scores, k=min(num_results, len(similarity_scores)))
+        # CATEGORY BOOST FIX: If searching for gaming/laptop, penalize TV remotes
+        if "gaming" in user_query.lower() or "laptop" in user_query.lower():
+            for idx in range(len(similarity_scores)):
+                category_text = catalog['categories'][idx].lower()
+                # If it's a remote control or TV accessory, lower its score slightly
+                if "remote" in category_text or "hometheater" in category_text:
+                    similarity_scores[idx] -= 0.15 # Subtracts weight from irrelevant items
         
-        st.subheader("✨ Top Recommended Products")
-        for score, idx_tensor in zip(top_scores, top_indices):
-            idx = idx_tensor.item()
-            with st.container(border=True):
-                col1, col2 = st.columns(2)
-                with col1:
+        top_scores, top_indices = torch.topk(similarity_scores, k=min(num_results, len(similarity_scores)))
+
                     # Formats similarity rating beautifully as a clean positive value
                     st.metric(label="Semantic Match Score", value=f"{score.item():.4f}")
                 with col2:
